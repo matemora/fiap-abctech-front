@@ -1,4 +1,4 @@
-import 'package:abctech/Constants.dart';
+import 'package:abctech/constants.dart';
 import 'package:get/get_connect.dart';
 
 abstract class AssistProviderInterface {
