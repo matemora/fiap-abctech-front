@@ -8,7 +8,7 @@ abstract class GeolocationServiceInterface {
     Future<bool> start();
 }
 
-class GeolocationServiceImpl implements GeolocationServiceInterface {
+class GeolocationService implements GeolocationServiceInterface {
     bool _serviceEnabled = false;
     late LocationPermission _permission = LocationPermission.denied;
 
