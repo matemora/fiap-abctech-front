@@ -11,6 +11,7 @@ class AssistsController extends GetxController with StateMixin<List<Assist>> {
   void onInit() {
     super.onInit();
     _assistService = Get.find<AssistService>();
+    getAssistList();
   }
 
   @override
@@ -47,7 +48,8 @@ class AssistsController extends GetxController with StateMixin<List<Assist>> {
 
   void getAssistList() {
     _assistService.getAssists().then((value) {
-      allAssists.addAll((value));
+      allAssists.clear();
+      allAssists.addAll(value);
       change(value, status: RxStatus.success());
     }).onError((error, stackTrace) {
       change([], status: RxStatus.error(error.toString()));

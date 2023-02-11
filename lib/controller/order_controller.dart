@@ -1,17 +1,25 @@
 import 'dart:developer';
 
 import 'package:abctech/model/assist.dart';
+import 'package:abctech/model/order.dart';
+import 'package:abctech/model/order_location.dart';
 import 'package:abctech/services/geolocation_service.dart';
+import 'package:abctech/services/order_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-class OrderController extends GetxController {
-  final GeolocationService _geolocationService;
+enum OrderState { creating, started, finished }
+
+class OrderController extends GetxController with StateMixin {
+  final GeolocationServiceInterface _geolocationService;
+  final OrderServiceInterface _orderService;
   final formKey = GlobalKey<FormState>();
   final operatorIdController = TextEditingController();
   final selectedAssists = <Assist>[].obs;
+  final screenState = OrderState.creating.obs;
+  late Order _order;
 
-  OrderController(this._geolocationService);
+  OrderController(this._geolocationService, this._orderService);
 
   @override
   void onInit() {
@@ -25,8 +33,54 @@ class OrderController extends GetxController {
     });
   }
 
+  List<int> _assistToList() {
+    return selectedAssists.map((e) => e.id).toList();
+  }
+
   finishStartOrder() {
-    log("teste");
+    switch (screenState.value) {
+      case OrderState.creating:
+        _geolocationService.getPosition().then((value) {
+          OrderLocation start = OrderLocation(
+            latitude: value.latitude,
+            longitude: value.longitude,
+            dateTime: DateTime.now(),
+          );
+          _order = Order(
+              operatorId: int.parse(operatorIdController.text),
+              assists: _assistToList(),
+              start: start,
+              end: null);
+          screenState.value = OrderState.started;
+        });
+        break;
+      case OrderState.started:
+        change(null, status: RxStatus.loading());
+        _geolocationService.getPosition().then((value) {
+          _order.end = OrderLocation(
+            latitude: value.latitude,
+            longitude: value.longitude,
+            dateTime: DateTime.now(),
+          );
+          _createOrder();
+        });
+        break;
+      default:
+        break;
+    }
+  }
+
+  void _createOrder() {
+      screenState.value = OrderState.finished;
+    _orderService.createOrder(_order).then((value) {
+      if (value) {
+        Get.snackbar("Sucesso", "Ordem de serviço enviada com sucesso");
+      }
+      change(null, status: RxStatus.success());
+    }).catchError((error) {
+      Get.snackbar("Erro", error.toString());
+      change(null, status: RxStatus.success());
+    });
   }
 
   selectAssists() {
