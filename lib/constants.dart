@@ -1,3 +1,3 @@
 class Constants {
-  static const url='';
+  static const url='http://localhost:8000';
 }

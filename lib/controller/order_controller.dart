@@ -27,6 +27,12 @@ class OrderController extends GetxController with StateMixin {
     _geolocationService.start();
   }
 
+  @override
+  void onReady() {
+    super.onReady();
+    change(null, status: RxStatus.success());
+  }
+
   getLocation() {
     _geolocationService.getPosition().then((value) {
       log(value.toJson().toString());
@@ -40,6 +46,11 @@ class OrderController extends GetxController with StateMixin {
   finishStartOrder() {
     switch (screenState.value) {
       case OrderState.creating:
+      if(!formKey.currentState!.validate()) return;
+      if(selectedAssists.isEmpty) {
+        Get.snackbar("Erro", "Selecione pelo menos uma assistência técnica");
+        return;
+      }
         _geolocationService.getPosition().then((value) {
           OrderLocation start = OrderLocation(
             latitude: value.latitude,
@@ -52,6 +63,7 @@ class OrderController extends GetxController with StateMixin {
               start: start,
               end: null);
           screenState.value = OrderState.started;
+          Get.snackbar("Sucesso", "Ordem de serviço iniciada com sucesso.");
         });
         break;
       case OrderState.started:
@@ -71,16 +83,23 @@ class OrderController extends GetxController with StateMixin {
   }
 
   void _createOrder() {
-      screenState.value = OrderState.finished;
+    screenState.value = OrderState.finished;
     _orderService.createOrder(_order).then((value) {
       if (value) {
         Get.snackbar("Sucesso", "Ordem de serviço enviada com sucesso");
       }
-      change(null, status: RxStatus.success());
+      _clearForm();
     }).catchError((error) {
       Get.snackbar("Erro", error.toString());
-      change(null, status: RxStatus.success());
+      _clearForm();
     });
+  }
+
+  void _clearForm() {
+    screenState.value = OrderState.creating;
+    operatorIdController.text = "";
+    selectedAssists.clear();
+    change(null, status: RxStatus.success());
   }
 
   selectAssists() {
